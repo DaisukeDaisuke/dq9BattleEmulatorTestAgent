@@ -28,6 +28,7 @@ namespace dq9BattleEmulatorTestAgent
         private readonly int _saveSlot;
         private readonly Action<string>? _outputCallback;
         private readonly Action<string>? _errorCallback;
+        private bool Paused = true;
 
         public DesmumeInstance(
             string exePath,
@@ -51,7 +52,7 @@ namespace dq9BattleEmulatorTestAgent
             if (!File.Exists(_romPath))
                 throw new FileNotFoundException("ROMファイルが見つかりません", _romPath);
 
-            string args = $"--preload-rom \"{_romPath}\" --load-slot {_saveSlot} --disable-sound --frameskip 10";
+            string args = $"--preload-rom \"{_romPath}\" --load-slot {_saveSlot} --disable-sound --frameskip 9";
 
             var psi = new ProcessStartInfo
             {
@@ -92,17 +93,39 @@ namespace dq9BattleEmulatorTestAgent
             SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)(DeSmuMECommands.IDD_LUARECENT_RESERVE_START + id), IntPtr.Zero);
         }
 
-        public void SendButtonValue(int buttonId, int value)
+        public void LoadState(int id = 0)
         {
             if (WindowHandle == IntPtr.Zero)
-                throw new ArgumentException("無効なウィンドウハンドルです。");
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
 
-            IntPtr childHwnd = GetDlgItem(WindowHandle, DeSmuMEButton.IDD_INPUTCONFIG);
-            if (childHwnd == IntPtr.Zero)
-                throw new InvalidOperationException($"ボタンID {buttonId} のコントロールが見つかりません。");
-
-            SendMessage(WindowHandle, DeSmuMEButton.CUSTOM_MESSAGE, (IntPtr)value, childHwnd);
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDM_STATE_LOAD_F10 + id, (IntPtr) id);
         }
+
+        public void SaveState(int id = 0)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDM_STATE_SAVE_F10 + id, (IntPtr)id);
+        }
+        public void TogglePause(bool enable)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            if(Paused == enable)
+                return; // 既に状態が一致している場合は何もしない
+
+            Paused = !Paused;
+
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDM_PAUSE, IntPtr.Zero);
+        }
+
+        public bool isPaused()
+        {
+            return Paused;
+        }
+
         public void Terminate()
         {
             try

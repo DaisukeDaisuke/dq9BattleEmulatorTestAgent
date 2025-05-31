@@ -11,6 +11,11 @@ namespace dq9BattleEmulatorTestAgent
         public const uint WM_COMMAND = 0x0111;
         public const int IDD_LUARECENT_RESERVE_START = 58100; // DeSmuMEのコマンドID（仮定）
         public const int IDC_LUACONSOLE = 309; // DeSmuMEのコマンドID（仮定）
+        public const int IDM_STATE_LOAD = 135; // DeSmuMEのコマンドID（仮定）
+        public const int IDM_STATE_SAVE = 136; // DeSmuMEのコマンドID（仮定）
+        public const int IDM_STATE_LOAD_F10 = 149; // DeSmuMEのコマンドID（仮定）
+        public const int IDM_STATE_SAVE_F10 = 139; // DeSmuMEのコマンドID（仮定）
+        public const int IDM_PAUSE = 113; // DeSmuMEのコマンドID（仮定）
 
         public const int IDC_USE_STDOUT = 1052;
         public const int BM_SETCHECK = 0x00F1;
