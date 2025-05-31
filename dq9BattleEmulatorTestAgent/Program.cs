@@ -62,6 +62,11 @@ namespace dq9BattleEmulatorTestAgent
             instance.pushJoypadInput(Joypad.A);
             instance.pushJoypadInput(Joypad.Left);
             instance.pushJoypadInput(Joypad.A);
+            instance.pushJoypadInput(Joypad.Left);
+            instance.pushJoypadInput(Joypad.Left);
+            instance.pushJoypadInput(Joypad.Down);
+            instance.pushJoypadInput(Joypad.Down);
+            instance.pushJoypadInput(Joypad.A);
             //instance.pushJoypadInput(Joypad.Down);
             //instance.pushJoypadInput(Joypad.Down);
             //instance.pushJoypadInput(Joypad.A);

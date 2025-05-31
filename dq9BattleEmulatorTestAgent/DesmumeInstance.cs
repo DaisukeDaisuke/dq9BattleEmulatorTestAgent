@@ -285,7 +285,7 @@ namespace dq9BattleEmulatorTestAgent
             {
                 throw new ArgumentException($"無効なキー: {key}");
             }
-            var path = Path.Combine(_workingDirectory, "resource", "keys", keyLuaMap[key]);
+            var path = Path.Combine(_workingDirectory, "keys", keyLuaMap[key]);
             if (!File.Exists(path))
             {
                 throw new FileNotFoundException($"Lua スクリプトが見つかりません: {path}");
