@@ -41,17 +41,17 @@ namespace dq9BattleEmulatorTestAgent
                 errorCallback: msg => Debug.WriteLine("[ERR] " + msg)
             );
             await instance.StartAsync();
-            instance.LaunchLuaWindow(0);
+            await instance.OpenLuaConsoleAndRunScript("D:\\csharp\\dq9beta\\Ctable.lua");
             await instance.ToggleConsoleOutput();
-            await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
-            instance.LoadState(0);
-            instance.SaveState(0);
+            //await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
+            //instance.LoadState(0);
+            //instance.SaveState(0);
 
-            while (true)
-            {
-                instance.TogglePause(!instance.isPaused());
-                await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
-            }
+            //while (true)
+            //{
+            //    instance.TogglePause(!instance.isPaused());
+            //    await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
+            //}
 
 
             // アプリケーション起動

@@ -19,6 +19,9 @@ namespace dq9BattleEmulatorTestAgent
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         static extern IntPtr SendDlgItemMessage(IntPtr hDlg, int nIDDlgItem, uint Msg, IntPtr wParam, IntPtr lParam);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, [MarshalAs(UnmanagedType.LPTStr)] string lParam);
+
 
         public Process Process { get; private set; }
         public IntPtr WindowHandle { get; private set; } = IntPtr.Zero;
@@ -107,6 +110,27 @@ namespace dq9BattleEmulatorTestAgent
                 throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
 
             SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDM_STATE_SAVE_F10 + id, (IntPtr)id);
+        }
+        public async Task<IntPtr> OpenLuaConsoleAndRunScript(string luaPath)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDC_NEW_LUA_SCRIPT, (IntPtr)0);
+
+            foreach(IntPtr WindowHandleLua in await WindowFinder.WaitForWindowsByRegexAsync(Process.Id, "Lua S", 1))
+            {
+                // 子コントロール（Edit）を取得
+                IntPtr editBox = GetDlgItem(WindowHandleLua, DeSmuMECommands.IDC_EDIT_LUAPATH);
+                if (editBox == IntPtr.Zero)
+                    continue;
+
+                // 絶対パスを設定
+                SendMessage(editBox, DeSmuMECommands.WM_SETTEXT, IntPtr.Zero, luaPath);
+
+                return WindowHandleLua; // 成功したウィンドウのハンドルを返す
+            }
+            return IntPtr.Zero; // Luaコンソールのウィンドウハンドルを取得するための処理は省略
         }
         public void TogglePause(bool enable)
         {
