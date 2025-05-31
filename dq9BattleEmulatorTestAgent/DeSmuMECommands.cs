@@ -18,7 +18,10 @@ namespace dq9BattleEmulatorTestAgent
         public const int IDM_PAUSE = 113; // DeSmuMEのコマンドID（仮定）
         public const int IDC_NEW_LUA_SCRIPT = 318; // DeSmuMEのコマンドID（仮定）
         public const int IDC_EDIT_LUAPATH = 310; // DeSmuMEのコマンドID（仮定）
+        public const int IDC_CLOSE_LUA_SCRIPTS = 368; // DeSmuMEのコマンドID（仮定）
+
         public const int WM_SETTEXT = 0x000C; // DeSmuMEのコマンドID（仮定）
+        public const int WM_CLOSE = 0x0010; // ウィンドウを閉じるメッセージ
 
         public const int IDC_USE_STDOUT = 1052;
         public const int BM_SETCHECK = 0x00F1;

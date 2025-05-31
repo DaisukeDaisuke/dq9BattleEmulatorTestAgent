@@ -111,6 +111,24 @@ namespace dq9BattleEmulatorTestAgent
 
             SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDM_STATE_SAVE_F10 + id, (IntPtr)id);
         }
+        public void closeAllLuaConsole()
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)DeSmuMECommands.IDC_CLOSE_LUA_SCRIPTS, (IntPtr)0);
+        }
+
+        public void closeLuaConsole(IntPtr handle)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            if (handle == IntPtr.Zero)
+                throw new ArgumentException("無効なウィンドウハンドルです。");
+
+            SendMessage(handle, DeSmuMECommands.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        }
         public async Task<IntPtr> OpenLuaConsoleAndRunScript(string luaPath)
         {
             if (WindowHandle == IntPtr.Zero)

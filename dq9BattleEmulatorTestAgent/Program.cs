@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -12,6 +13,8 @@ namespace dq9BattleEmulatorTestAgent
     {
         private static Form1 form;
         private static DesmumeInstance instance;
+
+        private static readonly Dictionary<string, IntPtr> LuaWindowHandles = new();
 
         [STAThread]
         static async Task Main()
@@ -41,8 +44,18 @@ namespace dq9BattleEmulatorTestAgent
                 errorCallback: msg => Debug.WriteLine("[ERR] " + msg)
             );
             await instance.StartAsync();
-            await instance.OpenLuaConsoleAndRunScript("D:\\csharp\\dq9beta\\Ctable.lua");
+            string luaScriptPath = "D:\\csharp\\dq9beta\\Ctable.lua";
+            IntPtr luaWindowHandle = await instance.OpenLuaConsoleAndRunScript(luaScriptPath);
+            if (luaWindowHandle != IntPtr.Zero)
+            {
+                LuaWindowHandles[luaScriptPath] = luaWindowHandle;
+            }
             await instance.ToggleConsoleOutput();
+
+            await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
+
+            instance.closeLuaConsole(luaWindowHandle); // すべてのLuaコンソールを閉じる
+
             //await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
             //instance.LoadState(0);
             //instance.SaveState(0);
