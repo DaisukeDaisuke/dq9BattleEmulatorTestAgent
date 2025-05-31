@@ -46,6 +46,8 @@ namespace dq9BattleEmulatorTestAgent
                 GetWindowText(hWnd, sb, sb.Capacity);
                 string title = sb.ToString();
 
+                //Debug.WriteLine("found windows: " + title);
+
                 if (regex.IsMatch(title))
                 {
                     // コールバックが指定されている場合、false を返したら列挙停止

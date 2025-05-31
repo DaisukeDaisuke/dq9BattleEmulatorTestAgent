@@ -41,20 +41,31 @@ namespace dq9BattleEmulatorTestAgent
                 romPath,
                 saveSlot,
                 outputCallback: msg => Debug.WriteLine("[OUT] " + msg),
-                errorCallback: msg => Debug.WriteLine("[ERR] " + msg)
+                errorCallback: msg => Debug.WriteLine("[ERR] " + msg),
+                Directory.GetCurrentDirectory()
             );
             await instance.StartAsync();
             string luaScriptPath = "D:\\csharp\\dq9beta\\Ctable.lua";
+            //string luaScriptPath = "D:\\csharp\\dq9beta\\dq9BattleEmulatorTestAgent\\dq9BattleEmulatorTestAgent\\resource\\keys\\keyInput_A.lua";
             IntPtr luaWindowHandle = await instance.OpenLuaConsoleAndRunScript(luaScriptPath);
             if (luaWindowHandle != IntPtr.Zero)
             {
                 LuaWindowHandles[luaScriptPath] = luaWindowHandle;
+                //instance.closeLuaConsole(luaWindowHandle); // すべてのLuaコンソールを閉じる
             }
+            //await instance.initJoyPad();
             await instance.ToggleConsoleOutput();
 
             await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
 
-            instance.closeLuaConsole(luaWindowHandle); // すべてのLuaコンソールを閉じる
+            instance.pushJoypadSleep(1000);
+            instance.pushJoypadInput(Joypad.A);
+            instance.pushJoypadInput(Joypad.Left);
+            instance.pushJoypadInput(Joypad.A);
+            //instance.pushJoypadInput(Joypad.Down);
+            //instance.pushJoypadInput(Joypad.Down);
+            //instance.pushJoypadInput(Joypad.A);
+
 
             //await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
             //instance.LoadState(0);
