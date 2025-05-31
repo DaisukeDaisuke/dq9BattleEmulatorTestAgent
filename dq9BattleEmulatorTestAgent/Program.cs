@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -10,58 +11,72 @@ namespace dq9BattleEmulatorTestAgent
     internal static class Program
     {
         private static Form1 form;
-        /// <summary>
-        /// アプリケーションのメイン エントリ ポイントです。
-        /// </summary>
+        private static DesmumeInstance instance;
+
         [STAThread]
-        static void Main()
+        static async Task Main()
         {
-            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) // Windows 7 (6.1)以降かをチェック
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 1)) // Windows 7以降
             {
                 Environment.Exit(1);
                 return;
             }
+
+            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            Application.ApplicationExit += (_, __) => OnProcessExit(null, null);
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(form = new Form1());
+
+            // ROM・スロット設定
+            string romPath = Path.Combine(Directory.GetCurrentDirectory(), "resource", "dq9_new.nds");
+            int saveSlot = 7;
+
+            instance = new DesmumeInstance(
+                Path.Combine(Directory.GetCurrentDirectory(), "resource", "DeSmuME-VS2022-x64-Release.exe"),
+                romPath,
+                saveSlot,
+                outputCallback: msg => Debug.WriteLine("[OUT] " + msg),
+                errorCallback: msg => Debug.WriteLine("[ERR] " + msg)
+            );
+            await instance.StartAsync();
+            instance.LaunchLuaWindow(0);
+            await Task.Delay(1000);
+            instance.ToggleConsoleOutput();
+
+            // アプリケーション起動
+            form = new Form1();
+            Application.Run(form);
         }
 
-        private static void OnProcessExit(object sender, EventArgs e)
+        private static void OnProcessExit(object? sender, EventArgs? e)
         {
-            form?.OnExit();
+            instance.Terminate();
+            form?.OnExit(); // フォームがあればクリーンアップ
         }
 
         private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             try
             {
-                // 例外オブジェクトを取得
-                Exception exception = e.ExceptionObject as Exception;
-
-                // エラーメッセージウィンドウを表示
+                Exception? exception = e.ExceptionObject as Exception;
                 string message = $"未処理の例外が発生しました。\n\n詳細:\n{exception?.Message ?? "不明なエラー"}";
                 string stackTrace = exception?.StackTrace ?? "スタックトレースはありません。";
 
-                // ログファイルにエラーを書き込む
                 File.WriteAllText("error_log.txt", $"{DateTime.Now}: {message}\n\n{stackTrace}");
 
-                // エラーダイアログを表示
-                MessageBox.Show(
-                    $"{message}\n\nスタックトレース:\n{stackTrace}",
-                    "アプリケーション エラー",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                MessageBox.Show($"{message}\n\nスタックトレース:\n{stackTrace}", "アプリケーション エラー",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                // エラーハンドラ内で別の例外が発生した場合の処理
                 File.WriteAllText("critical_error_log.txt", $"例外ハンドラ内エラー: {ex.Message}\n{ex.StackTrace}");
             }
             finally
             {
+                instance.Terminate();
                 form?.OnExit();
-                // アプリケーションを安全に終了
                 Environment.Exit(1);
             }
         }

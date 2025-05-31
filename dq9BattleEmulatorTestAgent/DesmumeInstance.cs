@@ -1,0 +1,128 @@
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace dq9BattleEmulatorTestAgent
+{
+    internal class DesmumeInstance
+    {
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetDlgItem(IntPtr hWnd, int nIDDlgItem);
+
+
+        public Process Process { get; private set; }
+        public IntPtr WindowHandle { get; private set; } = IntPtr.Zero;
+
+        private readonly string _exePath;
+        private readonly string _romPath;
+        private readonly int _saveSlot;
+        private readonly Action<string>? _outputCallback;
+        private readonly Action<string>? _errorCallback;
+
+        public DesmumeInstance(
+            string exePath,
+            string romPath,
+            int saveSlot,
+            Action<string>? outputCallback = null,
+            Action<string>? errorCallback = null)
+        {
+            _exePath = exePath;
+            _romPath = romPath;
+            _saveSlot = saveSlot;
+            _outputCallback = outputCallback;
+            _errorCallback = errorCallback;
+        }
+
+        public async Task StartAsync()
+        {
+            if (!File.Exists(_exePath))
+                throw new FileNotFoundException("DeSmuME 実行ファイルが見つかりません", _exePath);
+
+            if (!File.Exists(_romPath))
+                throw new FileNotFoundException("ROMファイルが見つかりません", _romPath);
+
+            string args = $"--preload-rom \"{_romPath}\" --load-slot {_saveSlot} --disable-sound --frameskip 10";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = _exePath,
+                Arguments = args,
+                WorkingDirectory = Path.GetDirectoryName(_exePath) ?? ".",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+            proc.OutputDataReceived += (s, e) => { if (e.Data != null) _outputCallback?.Invoke(e.Data); };
+            proc.ErrorDataReceived += (s, e) => { if (e.Data != null) _errorCallback?.Invoke(e.Data); };
+
+            proc.Start();
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+
+            Process = proc;
+
+            await Task.Delay(1500);
+            foreach (var hWnd in WindowFinder.FindWindowsByRegex(proc.Id, @"0\.9\.14"))
+            {
+                WindowHandle = hWnd;
+                break; // 最初に見つかったウィンドウを使用
+            }
+        }
+
+        public void LaunchLuaWindow(int id = 0)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。先にDeSmuMEを起動してください。");
+
+            SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)(DeSmuMECommands.IDD_LUARECENT_RESERVE_START + id), IntPtr.Zero);
+        }
+
+        public void Terminate()
+        {
+            try
+            {
+                if (Process != null && !Process.HasExited)
+                {
+                    Process.Kill(entireProcessTree: true);
+                    Process.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                _errorCallback?.Invoke("終了失敗: " + ex.Message);
+            }
+        }
+
+        public void ToggleConsoleOutput()
+        {
+            foreach (var hWnd in WindowFinder.FindWindowsByRegex(Process.Id, @".lua"))
+            {
+                ToggleCheckBox(hWnd, DeSmuMECommands.BST_CHECKED);
+            }
+        }
+
+
+        public static void ToggleCheckBox(IntPtr parentWindow, int Checked = DeSmuMECommands.BST_CHECKED)
+        {
+            IntPtr checkboxHandle = GetDlgItem(parentWindow, DeSmuMECommands.IDC_USE_STDOUT);
+            if (checkboxHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("stdout チェックボックスが見つかりませんでした。");
+                return;
+            }
+
+            SendMessage(checkboxHandle, DeSmuMECommands.BM_SETCHECK, (IntPtr)Checked, IntPtr.Zero);
+            Debug.WriteLine("stdout チェックボックスを ON にしました。");
+        }
+    }
+}
