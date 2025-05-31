@@ -36,7 +36,8 @@ namespace dq9BattleEmulatorTestAgent
             Regex regex = new(titlePattern, RegexOptions.IgnoreCase);
             List<IntPtr> matchingWindows = new();
 
-            EnumWindows((hWnd, lParam) => {
+            EnumWindows((hWnd, lParam) =>
+            {
                 GetWindowThreadProcessId(hWnd, out uint pid);
                 if (pid != targetProcessId)
                     return true;
@@ -58,6 +59,33 @@ namespace dq9BattleEmulatorTestAgent
             }, IntPtr.Zero);
 
             return matchingWindows; // リストを返す
+        }
+        public static async Task<IEnumerable<IntPtr>> WaitForWindowsByRegexAsync(
+            int targetProcessId,
+            string titlePattern,
+            int requiredCount,
+            int maxTries = 10,
+            int delayMs = 250)
+        {
+            var result = new HashSet<IntPtr>(); // 重複防止
+
+            for (int i = 0; i < maxTries; i++)
+            {
+                var matches = FindWindowsByRegex(targetProcessId, titlePattern)
+                    .Where(hWnd => !result.Contains(hWnd));
+
+                foreach (var hWnd in matches)
+                {
+                    result.Add(hWnd);
+                }
+
+                if (result.Count >= requiredCount)
+                    return result;
+
+                await Task.Delay(delayMs);
+            }
+
+            return result;
         }
     }
 }

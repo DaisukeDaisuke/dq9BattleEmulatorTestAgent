@@ -16,6 +16,9 @@ namespace dq9BattleEmulatorTestAgent
         [DllImport("user32.dll")]
         static extern IntPtr GetDlgItem(IntPtr hWnd, int nIDDlgItem);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        static extern IntPtr SendDlgItemMessage(IntPtr hDlg, int nIDDlgItem, uint Msg, IntPtr wParam, IntPtr lParam);
+
 
         public Process Process { get; private set; }
         public IntPtr WindowHandle { get; private set; } = IntPtr.Zero;
@@ -70,12 +73,14 @@ namespace dq9BattleEmulatorTestAgent
             proc.BeginErrorReadLine();
 
             Process = proc;
-
-            await Task.Delay(1500);
-            foreach (var hWnd in WindowFinder.FindWindowsByRegex(proc.Id, @"0\.9\.14"))
+            foreach (var hWnd in await WindowFinder.WaitForWindowsByRegexAsync(proc.Id, @"0\.9\.14", 1))
             {
                 WindowHandle = hWnd;
                 break; // 最初に見つかったウィンドウを使用
+            }
+            if(WindowHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("DeSmuMEのウィンドウが見つかりません。DeSmuMEが正しく起動しているか確認してください。");
             }
         }
 
@@ -87,6 +92,17 @@ namespace dq9BattleEmulatorTestAgent
             SendMessage(WindowHandle, DeSmuMECommands.WM_COMMAND, (IntPtr)(DeSmuMECommands.IDD_LUARECENT_RESERVE_START + id), IntPtr.Zero);
         }
 
+        public void SendButtonValue(int buttonId, int value)
+        {
+            if (WindowHandle == IntPtr.Zero)
+                throw new ArgumentException("無効なウィンドウハンドルです。");
+
+            IntPtr childHwnd = GetDlgItem(WindowHandle, DeSmuMEButton.IDD_INPUTCONFIG);
+            if (childHwnd == IntPtr.Zero)
+                throw new InvalidOperationException($"ボタンID {buttonId} のコントロールが見つかりません。");
+
+            SendMessage(WindowHandle, DeSmuMEButton.CUSTOM_MESSAGE, (IntPtr)value, childHwnd);
+        }
         public void Terminate()
         {
             try
@@ -103,12 +119,13 @@ namespace dq9BattleEmulatorTestAgent
             }
         }
 
-        public void ToggleConsoleOutput()
+        public async Task ToggleConsoleOutput()
         {
-            foreach (var hWnd in WindowFinder.FindWindowsByRegex(Process.Id, @".lua"))
+            foreach (var hWnd in await WindowFinder.WaitForWindowsByRegexAsync(Process.Id, @".lua", 1))
             {
                 ToggleCheckBox(hWnd, DeSmuMECommands.BST_CHECKED);
             }
+            await Task.CompletedTask;
         }
 
 
@@ -124,5 +141,7 @@ namespace dq9BattleEmulatorTestAgent
             SendMessage(checkboxHandle, DeSmuMECommands.BM_SETCHECK, (IntPtr)Checked, IntPtr.Zero);
             Debug.WriteLine("stdout チェックボックスを ON にしました。");
         }
+
+
     }
 }

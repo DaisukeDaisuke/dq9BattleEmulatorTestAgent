@@ -42,8 +42,13 @@ namespace dq9BattleEmulatorTestAgent
             );
             await instance.StartAsync();
             instance.LaunchLuaWindow(0);
-            await Task.Delay(1000);
-            instance.ToggleConsoleOutput();
+            await instance.ToggleConsoleOutput();
+
+            while (true)
+            {
+                instance.SendButtonValue(DeSmuMEButton.A, 1); // デバッグモードを有効化
+                await Task.Delay(1000); // メインスレッドをブロックしないように定期的に待機
+            }
 
             // アプリケーション起動
             form = new Form1();
